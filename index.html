@@ -480,10 +480,10 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
     </div>
     <div class="panel">
       <div class="ph"><div><h3>Acesso</h3></div></div>
-      <div class="defs"><dl><dt>Perfis</dt><dd><b>Administrador</b> (quem tem acesso de edição ao painel): vê tudo, importa a base e configura acessos. <b>Diretoria/Controladoria</b>: vê tudo. <b>Gerente regional</b>: vê as regiões atribuídas. <b>Supervisor</b>: vê só as lojas das carteiras atribuídas. Quem não está cadastrado não vê dados.</dd></dl>
+      <div class="defs"><dl><dt>Perfis</dt><dd><b>Administrador</b> (perfil Administrador no cadastro de acessos): vê tudo, importa a base e configura acessos. <b>Diretoria/Controladoria</b>: vê tudo. <b>Gerente regional</b>: vê as regiões atribuídas. <b>Supervisor</b>: vê só as lojas das carteiras atribuídas. Quem não está cadastrado não vê dados.</dd></dl>
       <dl><dt>Exportação</dt><dd>O Excel e o book saem só com as lojas que o perfil enxerga.</dd></dl>
       <dl><dt>Um único sistema</dt><dd>VMT e CH ficam no mesmo painel. O filtro <b>Empresa</b> no topo alterna entre Consolidado, VMT e CH. Quem tem perfil regional ou supervisor só vê as empresas e lojas do seu cadastro, na tela, no Excel e no book.</dd></dl>
-      <dl><dt>Limite técnico</dt><dd>Como todos os números ficam no mesmo arquivo do painel, o controle por perfil é aplicado na tela e nas exportações. Para sigilo total entre empresas, seria preciso voltar a ter um painel por empresa.</dd></dl></div>
+      <dl><dt>Sigilo por perfil</dt><dd>Os números ficam no banco (Supabase) e cada pessoa só recebe as lojas e empresas do seu cadastro. O controle vale no próprio banco, e não só na tela: a mesma regra se aplica ao Excel e ao book.</dd></dl></div>
     </div>
   </section>
 
@@ -515,10 +515,10 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
 
   <!-- CONFIGURAÇÃO -->
   <section role="tabpanel" id="tab-config" hidden>
-    <div class="intro"><div><h2>Configuração</h2><p>Acessos dos usuários, carga mensal da base e sincronização de comentários. Só administradores veem esta aba.</p></div></div>
+    <div class="intro"><div><h2>Configuração</h2><p>Acessos dos usuários, carga mensal da base e backup de comentários. Só administradores veem esta aba.</p></div></div>
     <div class="cfg">
       <div class="panel">
-        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. Depois, compartilhe o painel com ela pelo menu Compartilhar (Contribuidor para quem comenta).</div></div></div>
+        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. O login (e-mail e senha provisória) é criado no Supabase, em Authentication → Users. O banco só entrega a cada pessoa as lojas do seu cadastro.</div></div></div>
         <div class="form" id="acForm">
           <label class="full">Pessoa<div class="ta"><input id="acBusca" autocomplete="off" placeholder="Digite o nome ou e-mail"><div class="ta-list" id="acList" hidden></div></div></label>
           <div class="full" id="acSel"></div>
@@ -558,11 +558,11 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
         </div>
       </div>
       <div class="panel">
-        <div class="ph"><div><h3>Meses importados</h3><div class="sub">Meses carregados pelo painel. Removendo um mês importado, volta a valer a base original do painel (se houver).</div></div></div>
+        <div class="ph"><div><h3>Meses importados</h3><div class="sub">Meses carregados pelo painel. Para corrigir um mês, importe o arquivo de novo (carga total ou parcial).</div></div></div>
         <div class="tbl-wrap"><table id="imTable"></table></div>
       </div>
       <div class="panel">
-        <div class="ph"><div><h3>Comentários: backup e migração</h3><div class="sub">Exporte todos os comentários em .json (backup) ou importe comentários de outro painel. Com o sistema único, não é mais preciso sincronizar antes da reunião.</div></div></div>
+        <div class="ph"><div><h3>Comentários: backup e migração</h3><div class="sub">Exporte todos os comentários em .json (backup) ou importe comentários de um arquivo .json (por exemplo, do painel antigo no Claude). Os comentários ficam gravados no banco para todos.</div></div></div>
         <div class="filters">
           <button class="btn ghost" id="cmExp" type="button">Exportar comentários (.json)</button>
           <label class="btn ghost" style="display:inline-block">Importar comentários (.json)<input type="file" id="cmImp" accept=".json" hidden></label>
@@ -1519,7 +1519,7 @@ function commentForm(r){
       autor: ME?.id||null, em:new Date().toISOString()};
     btn.disabled=true; btn.textContent='Salvando…';
     try{ await DB.doc('comentarios/'+key).set(data); COMMENTS[key]=data; btn.textContent='Salvo'; f.querySelector('[data-meta]').textContent='Salvo agora'; updateBadge(); setTimeout(()=>{btn.textContent='Salvar comentário';btn.disabled=false;},1200); }
-    catch(err){ btn.disabled=false; btn.textContent='Salvar comentário'; f.querySelector('[data-meta]').textContent = err?.code==='invalid_argument'||err?.code==='not_granted'?'Seu acesso a este painel é só de leitura. Peça acesso de Contribuidor à Controladoria.':'Não foi possível salvar agora. Tente de novo em instantes.'; }
+    catch(err){ btn.disabled=false; btn.textContent='Salvar comentário'; f.querySelector('[data-meta]').textContent = err?.code==='invalid_argument'||err?.code==='not_granted'?'Seu acesso a este painel é só de leitura. Peça à Controladoria a permissão de comentar.':'Não foi possível salvar agora. Tente de novo em instantes.'; }
   });
   return f;
 }
@@ -1543,7 +1543,7 @@ function renderComent(){
   const n=$('cmNotice');
   n.innerHTML = MODE==='local' ? '<div class="note">Arquivo aberto fora do Claude: comentários só no painel publicado.</div>'
     : ROLE.simulado ? '<div class="note">Você está simulando outra visão. Os formulários ficam bloqueados.</div>'
-    : (CANW===false||!ROLE.comenta)?'<div class="note">Seu acesso a este painel é só de leitura. Para comentar, peça acesso de Contribuidor à Controladoria.</div>':'';
+    : (CANW===false||!ROLE.comenta)?'<div class="note">Seu acesso a este painel é só de leitura. Para comentar, peça a permissão à Controladoria.</div>':'';
   const bySup={}; rows.forEach(r=>(bySup[r.s.s]??=[]).push(r));
   $('cmProg').innerHTML = Object.keys(bySup).map(sp=>{ const t=bySup[sp].length, d=bySup[sp].filter(r=>COMMENTS[cid(ri,r.s.id)]).length;
     return `<div class="it"><div class="nm">${esc(sp)}</div><div class="muted" style="font-size:12px">${d} de ${t} lojas comentadas em ${ml(ri)}</div><div class="meter"><b style="width:${t?d/t*100:0}%"></b></div></div>`; }).join('');
@@ -1896,7 +1896,7 @@ async function commitImport(btn){
     const last=PENDING.groups.filter(g=>g.sel).map(g=>g.ref).sort().pop();
     PENDING=null; $('imPrev').innerHTML='<div class="okline">Base gravada. O painel já está usando os valores importados. Confira na aba Conferência da base.</div>';
     buildData(); reinit(); const i=D.months.indexOf(last); if(i>=11 && i>state.ri){ state.ri=i; selRef.value=i; renderAll(); }
-  }catch(e){ console.error(e); btn.disabled=false; btn.textContent='Gravar no painel'; toast(e?.code==='invalid_argument'||e?.code==='not_granted'?'Sem permissão para gravar a base (é preciso acesso de edição ao painel).':'Erro ao gravar: '+(e?.message||e?.code||e)); }
+  }catch(e){ console.error(e); btn.disabled=false; btn.textContent='Gravar no painel'; toast(e?.code==='invalid_argument'||e?.code==='not_granted'?'Sem permissão para gravar a base (é preciso perfil Administrador).':'Erro ao gravar: '+(e?.message||e?.code||e)); }
 }
 
 /* ---------- configuração ---------- */
@@ -1913,7 +1913,7 @@ async function renderConfig(){
   $('acRegs').innerHTML = regsAll.map(r=>`<label><input type="checkbox" value="${esc(r)}" ${(sel.regs||[]).includes(r)?'checked':''}> ${esc(r)}</label>`).join('');
   // tabela
   const ids=Object.keys(ACESSOS); await profilesOf(ids);
-  const t=$('acTable'); t.innerHTML = ids.length ? '<thead><tr><th>Pessoa</th><th>Perfil</th><th>Escopo</th><th>Exporta</th><th></th></tr></thead>' : '<tbody><tr><td class="muted">Nenhum acesso cadastrado. Administradores (quem tem acesso de edição) já veem tudo.</td></tr></tbody>';
+  const t=$('acTable'); t.innerHTML = ids.length ? '<thead><tr><th>Pessoa</th><th>Perfil</th><th>Escopo</th><th>Exporta</th><th></th></tr></thead>' : '<tbody><tr><td class="muted">Nenhum acesso cadastrado. Cadastre pelo menos um Administrador.</td></tr></tbody>';
   if(ids.length){ const tb=document.createElement('tbody');
     ids.sort((a,b)=>(PROF[a]?.name||'').localeCompare(PROF[b]?.name||'')).forEach(id=>{ const a=ACESSOS[id]; const tr=document.createElement('tr');
       const td0=document.createElement('td'); td0.appendChild(personEl(id)); tr.appendChild(td0);
@@ -1953,8 +1953,8 @@ $('acSave').onclick=async()=>{
   if(perfil==='regional'&&!regs.length){ $('acMsg').textContent='Marque ao menos uma região.'; return; }
   const doc={perfil, sups:perfil==='supervisor'?sups:[], regs:perfil==='regional'?regs:[], exporta:$('acExp').checked, ativo:true, em:new Date().toISOString(), por:ME?.id||null};
   $('acSave').disabled=true;
-  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo. Lembre de compartilhar o painel com a pessoa.'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
-  catch(e){ $('acMsg').textContent='Não foi possível salvar (é preciso acesso de edição).'; $('acSave').disabled=false; }
+  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo. Se a pessoa ainda não tem login, crie no Supabase (Authentication → Users).'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
+  catch(e){ $('acMsg').textContent='Não foi possível salvar (é preciso perfil Administrador).'; $('acSave').disabled=false; }
 };
 async function renderImports(){
   const docs=Object.entries(IMPORTS).sort((a,b)=>b[0].localeCompare(a[0]));
@@ -2509,7 +2509,7 @@ async function saveExt(ym, raw, fonte){
     const v=toNum(txt); if(!isFinite(v)){ toast('Valor inválido: '+txt); return false; }
     const doc={ref:ym, empresa:emp, rob:Math.round(v*100)/100, fonte, em:new Date().toISOString(), autor:ME?.id||null};
     await DB.doc('conferencia/'+key).set(doc); CONF[key]=doc; renderConf(); return true;
-  }catch(e){ toast('Não foi possível gravar (é preciso acesso de edição ao painel).'); return false; }
+  }catch(e){ toast('Não foi possível gravar (é preciso perfil Administrador).'); return false; }
 }
 $('cfPasteBtn').onclick=()=>{ $('cfPaste').hidden=!$('cfPaste').hidden; };
 $('cfPasteGo').onclick=async()=>{
@@ -2857,7 +2857,7 @@ $('spSave').onclick=async()=>{
     if(SP.edit && SP.edit!==nome && SUPCAD[slug(SP.edit)]) await DB.doc('supervisores/'+slug(SP.edit)).delete();
     await saveSupDoc(nome,{empresas, regioes:[...$('spReg').querySelectorAll('input:checked')].map(i=>i.value), inicio:ini, ativo:$('spAtivo').value==='1', obs:$('spObs').value.trim()});
     $('spMsg').textContent='Supervisor salvo. Para ele ver o painel, cadastre o acesso (perfil Supervisor) em Acessos.'; SP.edit=nome; reinit(); setTab('config');
-  }catch(e){ $('spMsg').textContent='Não foi possível salvar (é preciso acesso de edição ao painel).'; }
+  }catch(e){ $('spMsg').textContent='Não foi possível salvar (é preciso perfil Administrador).'; }
 };
 async function writeAssign(changes){   // changes: [{id, sup, inicio, obs}]
   const by={}; changes.forEach(c=>(by[c.id]??=[]).push(c));
@@ -2880,7 +2880,7 @@ $('spGo').onclick=async e=>{
   try{ if(!supOrigin(to)) await saveSupDoc(to,{empresas:[...new Set(ids.map(id=>BYID_ALL[id]?.e).filter(Boolean))], inicio:ini});
     const n=await writeAssign(ids.map(id=>({id, sup:to, inicio:ini, obs:$('spToObs').value.trim()})));
     SP.sel.clear(); $('spToObs').value=''; toast(`${n} loja(s) passam para ${to} a partir de ${mlYM(ini)}.`); reinit(); setTab('config');
-  }catch(err){ toast('Não foi possível gravar (é preciso acesso de edição).'); }
+  }catch(err){ toast('Não foi possível gravar (é preciso perfil Administrador).'); }
   btn.textContent='Transferir'; spSelMsg();
 };
 async function undoLast(id, btn){
@@ -2911,7 +2911,7 @@ $('spExp').onclick = e => withBusy(e.target, async()=>{
    'Supervisor novo: escreva o nome completo; ele é cadastrado na importação. Para já deixar o cadastro pronto (empresa e regiões), inclua uma linha na aba Supervisores.',
    'O mês de início vale para frente: os meses anteriores continuam com o supervisor anterior nos números, na pauta e no book.',
    'No painel: Configuração → Supervisores e carteiras → Importar ajustes. Confira a prévia e grave.',
-   'Depois, cadastre o acesso do supervisor novo em Configuração → Acessos e compartilhe o painel.'].forEach((t,i)=>{ const a=wi.getCell(i+2,1), b=wi.getCell(i+2,2); a.value=i+1; a.fill=xfill(XC.acc); a.font={name:FONT,bold:true}; a.alignment={horizontal:'center',vertical:'middle'}; b.value=t; b.alignment={wrapText:true,vertical:'middle',indent:1}; wi.getRow(i+2).height=32; });
+   'Depois, cadastre o acesso do supervisor novo em Configuração → Acessos e crie o login dele no Supabase.'].forEach((t,i)=>{ const a=wi.getCell(i+2,1), b=wi.getCell(i+2,2); a.value=i+1; a.fill=xfill(XC.acc); a.font={name:FONT,bold:true}; a.alignment={horizontal:'center',vertical:'middle'}; b.value=t; b.alignment={wrapText:true,vertical:'middle',indent:1}; wi.getRow(i+2).height=32; });
   await xSave(wb, `Carteiras_supervisao_${last}.xlsx`);
 });
 let SP_PEND=null;
@@ -2962,7 +2962,7 @@ function renderSupImport(){
     try{ for(const x of P.sups){ const cur=supOrigin(x.nome)||{}; await saveSupDoc(x.nome,{empresas:x.empresas.length?x.empresas:(cur.empresas||[]), regioes:x.regioes.length?x.regioes:(cur.regioes||[]), inicio:x.inicio||cur.inicio||'', ativo:x.ativo, obs:x.obs||cur.obs||''}); }
       const n=await writeAssign(ok.map(r=>({id:r.s.id, sup:r.para, inicio:r.ini, obs:r.obs})));
       SP_PEND=null; $('spImpPrev').innerHTML=`<div class="okline" style="margin-bottom:12px">Gravado: ${n} loja(s) e ${P.sups.length} cadastro(s) de supervisor.</div>`; reinit(); setTab('config');
-    }catch(err){ b.disabled=false; b.textContent='Gravar'; toast('Não foi possível gravar (é preciso acesso de edição).'); }
+    }catch(err){ b.disabled=false; b.textContent='Gravar'; toast('Não foi possível gravar (é preciso perfil Administrador).'); }
   };
 }
 const _renderConfig0 = renderConfig;
@@ -3117,7 +3117,7 @@ async function showRequest(){
   $('lgF').onsubmit=async e=>{ e.preventDefault(); const em=$('lgEm').value.trim(), area=$('lgArea').value.trim();
     if(!/^\S+@\S+\.\S+$/.test(em)){ $('lgMsg').innerHTML='<span class="errline">Informe um e-mail válido.</span>'; return; }
     try{ await DB.doc('solicitacoes/'+ME.id).set({uid:ME.id, tipo:'acesso', email:em, area, em:new Date().toISOString()}); await logEv('solicitacao'); $('lgMsg').innerHTML='<span class="okline">Pedido enviado. Você será avisado pela Controladoria.</span>'; }
-    catch(err){ $('lgMsg').innerHTML='<span class="errline">Não foi possível enviar. Peça à Controladoria para compartilhar o painel com você como Contribuidor.</span>'; } };
+    catch(err){ $('lgMsg').innerHTML='<span class="errline">Não foi possível enviar. Peça à Controladoria a permissão de comentar.</span>'; } };
 }
 function enterApp(){
   AUTH=true; $('loginGate').hidden=true;
@@ -3149,7 +3149,7 @@ function applyPermsSafe(){ try{ applyPerms(); }catch(e){} }
   document.head.appendChild(st);
   const old=document.getElementById('acForm')?.closest('.panel'); if(!old) return;
   const p=document.createElement('div'); p.className='panel'; p.id='pnAcc';
-  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. No primeiro acesso ela cria a própria senha. Depois, compartilhe o painel pelo menu Compartilhar: <b>Contribuidor</b> para quem comenta, <b>Editor</b> para administradores.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
+  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. O login é criado no Supabase (Authentication → Users, com senha provisória); no primeiro acesso a pessoa troca a senha pelo botão <b>Senha</b>. Quem só tem login, sem cadastro aqui, não recebe dados.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
     <form id="aForm" class="acc-grid" autocomplete="off">
       <div class="acc-box"><h4 id="aTit">Novo acesso</h4>
         <div class="form">

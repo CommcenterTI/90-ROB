@@ -20,6 +20,18 @@
 body.sb-pre header.top,body.sb-pre main,body.sb-pre footer#foot{display:none!important}
 .sb-prog{font-size:12.5px;color:var(--ink-2)}
 </style>
+<script>
+/* foto do usuário: sem foto, mostra as iniciais num círculo */
+window.avatarSrc = function(url, nome){
+  if(url) return url;
+  var t = String(nome||'').trim(); if(t.indexOf('@')>0) t = t.split('@')[0].replace(/[._-]+/g,' ');
+  var p = t.split(/\s+/).filter(function(w){ return w && !/^(de|da|do|dos|das|e|junior|júnior|jr|filho|neto|sobrinho)$/i.test(w); });
+  var ini = ((p[0]||'?')[0] + (p.length>1 ? p[p.length-1][0] : '')).toUpperCase();
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#E8A33D"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-family="Arial,Helvetica,sans-serif" font-size="26" font-weight="700" fill="#1F1B16">'+ini.replace(/[<>&"]/g,'')+'</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+};
+</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%2260%2040%20850%20920%22%3E%3Cpath%20fill%3D%22%23F8B408%22%20fill-rule%3D%22evenodd%22%20d%3D%22M485%20823A388%20388%200%201%201%20745%20725L485%20952ZM226.5%20435a258.5%20258.5%200%201%200%20517%200a258.5%20258.5%200%201%200-517%200Z%22/%3E%3C/svg%3E">
 </head><body class="sb-pre">
 
 <title>ROB Lojas</title>
@@ -65,8 +77,9 @@ h1,h2,h3{margin:0;text-wrap:balance}
 header.top{background:var(--head);color:var(--head-ink);position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
 .top-row{display:flex;align-items:center;gap:16px 24px;flex-wrap:wrap;padding-block:14px 10px}
 .brand{display:flex;align-items:center;gap:14px;min-width:0}
-.logo{display:inline-flex;align-items:flex-start;font-weight:900;font-size:26px;letter-spacing:-.04em;line-height:1}
-.logo i{width:10px;height:10px;border:3px solid var(--accent);border-radius:50% 50% 50% 0;transform:rotate(-45deg);margin:-1px 2px 0 0;display:block}
+.logo{display:inline-flex;align-items:baseline;font-weight:900;font-size:26px;letter-spacing:-.04em;line-height:1}
+.logo i{display:inline-block;flex:none;width:.57ex;height:.66ex;margin:0 -.06ex 0 0;border:0;border-radius:0;transform:translateY(-.57ex);background:var(--accent,#F8B408);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='97 47 777 907'%3E%3Cpath fill-rule='evenodd' d='M485 823A388 388 0 1 1 745 725L485 952ZM226.5 435a258.5 258.5 0 1 0 517 0a258.5 258.5 0 1 0-517 0Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='97 47 777 907'%3E%3Cpath fill-rule='evenodd' d='M485 823A388 388 0 1 1 745 725L485 952ZM226.5 435a258.5 258.5 0 1 0 517 0a258.5 258.5 0 1 0-517 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.brand .logo-ico{display:inline-flex;align-items:center}.brand .logo-ico i{width:29px;height:34px;margin:0;transform:none}
 .brand .sep{width:1px;height:26px;background:#3A3A37}
 .brand h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
 .brand .scope{font-size:12px;color:var(--head-muted);font-weight:500}
@@ -306,7 +319,7 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
   <div class="wrap">
     <div class="top-row">
       <div class="brand">
-        <span class="logo" aria-label="Comm"><i></i>comm</span>
+        <span class="logo logo-ico" role="img" aria-label="Comm"><i></i></span>
         <span class="sep" aria-hidden="true"></span>
         <div><h1>ROB Lojas</h1><div class="scope" id="scopeLbl"></div></div>
       </div>
@@ -466,7 +479,7 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
         <dt>Estrutural</dt><dd>Abaixo de 10% no mês e em 12 meses. Exige plano de ação ou decisão sobre a loja.</dd>
         <dt>Pontual</dt><dd>Abaixo de 10% no mês, mas acima em 12 meses. Explicar o evento do mês.</dd>
         <dt>Em recuperação</dt><dd>Acima de 10% no mês, mas abaixo em 12 meses. Confirmar se a melhora se sustenta.</dd>
-        <dt>Loja nova</dt><dd>Menos de 12 meses com receita. O 12M não é comparável.</dd>
+        <dt>Loja nova</dt><dd>Menos de 12 meses com receita. Entra normalmente nas listas de 12M, com o selo “nova · N meses”: o 12M soma só os meses desde a abertura.</dd>
       </dl>
     </div>
     <div class="panel">
@@ -877,7 +890,7 @@ function sums(ids, idxs, div=1){
 }
 function classify(pm,p12,isNew){
   if(pm==null && p12==null) return 'Sem receita';
-  const lm = pm!=null && pm<CUT, l12 = p12!=null && p12<CUT && !isNew;
+  const lm = pm!=null && pm<CUT, l12 = p12!=null && p12<CUT;
   if(lm && l12) return 'Estrutural';
   if(lm) return 'Pontual';
   if(l12) return 'Em recuperação';
@@ -901,8 +914,8 @@ function metrics(ri){
     const ytd=sums([s.id],range(yStart(ri),ri)), pytd=pct(ytd.rob,ytd.rl);
     const r = {s, m, y, pmv, pm, p12, ppm: pmv?pct(pmv.rob,pmv.rl):null, ply: ly?pct(ly.rob,ly.rl):null, py1: y1?pct(y1.rob,y1.rl):null,
       spark, below: spark.filter(v=>v!=null&&v<CUT).length, isNew, cls: classify(pm,p12,isNew),
-      lowM: pm!=null && pm<CUT, low12: p12!=null && p12<CUT && !isNew,
-      ytd, pytd, lowY: pytd!=null && pytd<CUT};
+      lowM: (pm!=null && pm<CUT) || m.rob<0, low12: (p12!=null && p12<CUT) || y.rob<0, nm: first>=0 ? ri-first+1 : 0,
+      ytd, pytd, lowY: (pytd!=null && pytd<CUT) || ytd.rob<0};
     r.drv = pmv && pmv.rl>0 && m.rl>0 ? mainDriver(bridge(m,pmv), m, pmv) : null;
     return r;
   });
@@ -1066,7 +1079,7 @@ async function renderUserChip(){
   if(MODE!=='online'){ el.hidden=true; return; }
   const scope = ROLE.perfil==='supervisor'? ROLE.sups.join(', ') : ROLE.perfil==='regional'? ROLE.regs.join(', ') : 'todas as lojas';
   el.hidden=false; el.innerHTML='';
-  const img=document.createElement('img'); img.src=ME?.avatarUrl||''; img.alt='';
+  const img=document.createElement('img'); img.src=avatarSrc(ME?.avatarUrl, ME?.name||(typeof EMAIL!=='undefined'?EMAIL:'')); img.alt='';
   const sp=document.createElement('span'); const b=document.createElement('b'); b.textContent=(ROLE.simulado?'Simulando · ':'')+PERFIL_LBL[ROLE.perfil]; sp.append(b, document.createTextNode(' · '+scope));
   sp.title = (ME?.name||'')+' — '+PERFIL_LBL[ROLE.perfil]+': '+scope;
   el.append(img,sp);
@@ -1277,7 +1290,7 @@ function renderVisao(){
   const m=sums(ids,[ri]), y=sums(ids,accIdx(ri,state.acc));
   const cv=covOf(ids), ly= ri-12>=cv? sums(ids,[ri-12]):null, pi=accPrevIdx(ri,state.acc,cv), y1= pi? sums(ids,pi):null;
   const lowM=rows.filter(r=>r.lowM), low12=rows.filter(r=>r.low12);
-  const negM=rows.filter(r=>r.m.rob<0&&r.m.rl>0), neg12=rows.filter(r=>r.y.rob<0&&!r.isNew);
+  const negM=rows.filter(r=>r.m.rob<0), neg12=rows.filter(r=>r.y.rob<0);
   const active=rows.filter(r=>r.m.rl>0).length;
   $('vgTitle').textContent = (state.sup||SCOPE.titulo)+' · '+refLabel();
   $('vgSub').textContent = `${active} lojas ativas com receita no mês. ${accLbl(ri,state.acc)}.`;
@@ -1285,7 +1298,7 @@ function renderVisao(){
     kpi('ROB do mês', `${fK(m.rob)}<small>${fP(pct(m.rob,m.rl))}</small>`, `vs ${ml(ri-12)}: ${delta(ly?pct(m.rob,m.rl)-pct(ly.rob,ly.rl):null)}`, true) +
     kpi(state.acc==='ytd'?'ROB acumulado '+D.months[ri].slice(0,4):'ROB 12 meses', `${fK(y.rob)}<small>${fP(pct(y.rob,y.rl))}</small>`, `vs ${state.acc==='ytd'?'mesmo período '+(+D.months[ri].slice(0,4)-1):'12M anterior'}: ${delta(y1?pct(y.rob,y.rl)-pct(y1.rob,y1.rl):null)}`) +
     kpi('Lojas &lt;10% no mês', `${lowM.length}<small>de ${active}</small>`, `<span class="dn">${negM.length} negativas</span> · ${fK(negM.reduce((a,r)=>a+r.m.rob,0))}`) +
-    kpi('Lojas &lt;10% em 12M', `${low12.length}<small>de ${rows.filter(r=>!r.isNew).length}</small>`, `<span class="dn">${neg12.length} negativas</span> · ${fK(neg12.reduce((a,r)=>a+r.y.rob,0))}`) +
+    kpi('Lojas &lt;10% em 12M', `${low12.length}<small>de ${rows.filter(r=>r.y.rl>0).length}</small>`, `<span class="dn">${neg12.length} negativas</span> · ${fK(neg12.reduce((a,r)=>a+r.y.rob,0))}`) +
     kpi('Estruturais', `${rows.filter(r=>r.cls==='Estrutural').length}`, `abaixo de 10% no mês e em 12M`);
   const idx=range(Math.max(0,ri-23),ri), lbl=idx.map(ml);
   const series = REGS.filter(g=>rows.some(r=>r.s.r===g)).map(g=>{ const gi=rows.filter(r=>r.s.r===g).map(r=>r.s.id); return {label:g,color:`var(--s-${g},var(--ink-2))`,values:idx.map(i=>{const x=sums(gi,[i]);return pct(x.rob,x.rl);})}; });
@@ -1303,7 +1316,7 @@ function renderVisao(){
     const need=rs.filter(needsComment), done=need.filter(r=>COMMENTS[cid(ri,r.s.id)]).length;
     return {sp, regs:[...new Set(rs.map(r=>r.s.r))].join(', '), n:rs.filter(r=>r.m.rl>0).length, pm:pct(a.rob,a.rl), ppv:pv?pct(pv.rob,pv.rl):null, p12:pct(b.rob,b.rl), rm:a.rob, r12:b.rob,
       lowM:rs.filter(r=>r.lowM).length, low12:rs.filter(r=>accOf(r).low).length, est:rs.filter(r=>r.cls==='Estrutural').length,
-      neg:rs.filter(r=>r.m.rob<0&&r.m.rl>0).reduce((a,r)=>a+r.m.rob,0), need:need.length, done}; });
+      neg:rs.filter(r=>r.m.rob<0).reduce((a,r)=>a+r.m.rob,0), need:need.length, done}; });
   $('tbSup').innerHTML = `<thead><tr><th>Supervisão</th><th>Regiões</th><th class="num">Lojas</th><th class="num colsep">ROB mês</th><th class="num">%</th><th class="num">vs ${ml(ri-1)}</th><th class="num colsep">ROB ${accShort(ri,state.acc)}</th><th class="num">%</th><th class="num colsep">&lt;10% mês</th><th class="num">&lt;10% ${accShort(ri,state.acc)}</th><th class="num">Estruturais</th><th class="num">ROB negativo mês</th><th class="num colsep">Comentários</th></tr></thead><tbody>`+
     supRows.map(r=>`<tr class="click" data-sup="${esc(r.sp)}" ${state.sup&&state.sup!==r.sp?'style="opacity:.45"':''}><td><b>${esc(r.sp)}</b></td><td>${esc(r.regs)}</td><td class="num">${r.n}</td><td class="num colsep">${fR(r.rm)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td><td class="num">${r.ppv!=null&&r.pm!=null?`<span class="${r.pm-r.ppv>=0?'up':'dn'}">${fPP(r.pm-r.ppv)}</span>`:'—'}</td><td class="num colsep">${fR(r.r12)}</td><td class="num ${pc(r.p12)}">${fP(r.p12)}</td><td class="num colsep">${r.lowM}</td><td class="num">${r.low12}</td><td class="num">${r.est?`<span class="pill p-crit">${r.est}</span>`:'0'}</td><td class="num dn">${r.neg?fR(r.neg):'—'}</td><td class="num colsep">${r.need?`${r.done}/${r.need}`:'—'}</td></tr>`).join('')+'</tbody>';
   document.querySelectorAll('#tbSup tr.click').forEach(tr=>tr.onclick=()=>{ if(SUPS.length<2) return; state.sup = state.sup===tr.dataset.sup?'':tr.dataset.sup; selSup.value=state.sup; renderAll(); });
@@ -1335,7 +1348,7 @@ function lojaRows(){
     if(state.crit==='any'&&!(r.lowM||ac.low)) return false;
     if(state.cls&&r.cls!==state.cls) return false;
     if(q && !(r.s.n.toLowerCase().includes(q)||String(r.s.cc).toLowerCase().includes(q))) return false;
-    return r.m.rl>0||r.y.rl>0||r.ytd.rl>0;
+    return r.m.rl>0||r.y.rl>0||r.ytd.rl>0||r.m.rob<0||r.y.rob<0||r.ytd.rob<0;
   });
 }
 function cmPill(r){ if(!needsComment(r)) return ''; const c=COMMENTS[cid(state.ri,r.s.id)]; return c?`<span class="pill p-ok">Comentado</span>`:`<span class="pill p-acc">Pendente</span>`; }
@@ -1347,9 +1360,9 @@ function renderLojas(){
   let h=`<thead><tr><th>Loja</th><th>Região</th><th class="num colsep">ROB ${ml(ri)}</th><th class="num">%</th><th class="num">vs ${ml(ri-1)}</th><th>Principal fator vs ${ml(ri-1)}</th><th class="num colsep">ROB ${AS}</th><th class="num">%</th><th>% mensal 12M</th><th class="num">Meses &lt;10%</th><th>Classificação</th><th>Comentário</th></tr></thead><tbody>`;
   Object.keys(groups).sort().forEach(sp=>{
     const g=groups[sp].sort((a,b)=>accOf(a).v.rob-accOf(b).v.rob);
-    const neg=g.filter(r=>r.m.rob<0&&r.m.rl>0);
+    const neg=g.filter(r=>r.m.rob<0);
     h+=`<tr class="grp"><td colspan="12">${esc(sp)} <span class="muted" style="font-weight:600">· ${g.length} lojas · ${neg.length} com ROB negativo no mês (${fK(neg.reduce((a,r)=>a+r.m.rob,0))})</span></td></tr>`;
-    g.forEach(r=>{ h+=`<tr class="click" data-id="${r.s.id}"><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu">nova</span>':''}<div class="muted" style="font-size:11.5px">CC ${esc(r.s.cc)}${r.s.sg?' · '+esc(r.s.sg):''}</div></td><td>${esc(r.s.r)}</td>
+    g.forEach(r=>{ h+=`<tr class="click" data-id="${r.s.id}"><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu" title="Menos de 12 meses com receita: o 12M soma só os meses desde a abertura">nova · '+r.nm+(r.nm===1?' mês':' meses')+'</span>':''}<div class="muted" style="font-size:11.5px">CC ${esc(r.s.cc)}${r.s.sg?' · '+esc(r.s.sg):''}</div></td><td>${esc(r.s.r)}</td>
       <td class="num colsep">${fR(r.m.rob)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td><td class="num">${r.ppm!=null&&r.pm!=null?`<span class="${r.pm-r.ppm>=0?'up':'dn'}">${fPP(r.pm-r.ppm)}</span>`:'—'}</td><td style="font-size:12.5px;white-space:nowrap">${drvHtml(r.drv)}</td>
       <td class="num colsep">${fR(accOf(r).v.rob)}</td><td class="num ${pc(accOf(r).p)}">${fP(accOf(r).p)}</td><td>${spark(r.spark)}</td><td class="num">${r.below}</td>
       <td><span class="pill ${CLS_PILL[r.cls]}">${r.cls}</span></td><td>${cmPill(r)}</td></tr>`; });
@@ -1903,7 +1916,7 @@ async function commitImport(btn){
 let AC_SEL=null;   // {id, name, email, avatarUrl}
 const PROF = {};   // cache de perfis
 async function profilesOf(ids){ ids=ids.filter(Boolean).filter(id=>!PROF[id]); if(ids.length&&USER){ try{ Object.assign(PROF, await USER.profiles(ids)); }catch(e){} } }
-function personEl(id){ const p=PROF[id]||{}; const d=document.createElement('span'); d.className='person'; const img=document.createElement('img'); img.src=p.avatarUrl||''; img.alt=''; const t=document.createElement('span'); t.textContent=(p.name||'Pessoa sem nome visível')+(p.email?' · '+p.email:''); d.append(img,t); return d; }
+function personEl(id){ const p=PROF[id]||{}; const d=document.createElement('span'); d.className='person'; const img=document.createElement('img'); img.src=avatarSrc(p.avatarUrl, p.name||p.email); img.alt=''; const t=document.createElement('span'); t.textContent=(p.name||'Pessoa sem nome visível')+(p.email?' · '+p.email:''); d.append(img,t); return d; }
 async function renderConfig(){
   if(!isAdmin()) return;
   // carteiras e regiões
@@ -1933,7 +1946,7 @@ function confirmInline(tr,msg){ if(tr.dataset.conf==='1') return true; tr.datase
 $('acSim').onchange=e=>{ SIM=e.target.value; reinit(); if(SIM) setTab('visao'); toast(SIM?'Simulando: '+e.target.selectedOptions[0].textContent+'. Volte em Configuração para sair.':'Visão de administrador.'); };
 $('acPerfil').onchange=()=>{ const p=$('acPerfil').value; $('acSupBox').hidden=p!=='supervisor'; $('acRegBox').hidden=p!=='regional'; };
 const acBusca=$('acBusca'), acList=$('acList');
-async function runSearch(q){ if(!USER){ acList.hidden=true; return; } const hits=await USER.search(q); acList.innerHTML=''; hits.forEach(h=>{ const b=document.createElement('button'); b.type='button'; const img=document.createElement('img'); img.src=h.avatarUrl||''; img.alt=''; const t=document.createElement('span'); t.textContent=h.name+(h.email?' · '+h.email:''); b.append(img,t); b.onclick=()=>{ PROF[h.id]=h; pickPerson({id:h.id,name:h.name,email:h.email,avatarUrl:h.avatarUrl}); }; acList.appendChild(b); }); acList.hidden=!hits.length; }
+async function runSearch(q){ if(!USER){ acList.hidden=true; return; } const hits=await USER.search(q); acList.innerHTML=''; hits.forEach(h=>{ const b=document.createElement('button'); b.type='button'; const img=document.createElement('img'); img.src=avatarSrc(h.avatarUrl, h.name||h.email); img.alt=''; const t=document.createElement('span'); t.textContent=h.name+(h.email?' · '+h.email:''); b.append(img,t); b.onclick=()=>{ PROF[h.id]=h; pickPerson({id:h.id,name:h.name,email:h.email,avatarUrl:h.avatarUrl}); }; acList.appendChild(b); }); acList.hidden=!hits.length; }
 acBusca.addEventListener('focus',()=>runSearch(acBusca.value||''));
 acBusca.addEventListener('input',()=>runSearch(acBusca.value));
 document.addEventListener('click',e=>{ if(!e.target.closest('.ta')) acList.hidden=true; });
@@ -1996,7 +2009,7 @@ const BOOK_CSS = `
 .page{background:#fff;max-width:1060px;margin:18px auto;padding:30px 36px;box-shadow:0 2px 14px rgba(0,0,0,.08)}
 h1{font-size:26px;margin:0;font-weight:900;letter-spacing:-.02em} h2{font-size:17px;margin:0 0 10px;font-weight:800;border-bottom:2px solid var(--ink);padding-bottom:6px} h3{font-size:13.5px;margin:14px 0 6px;font-weight:800}
 .cover{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:4px solid var(--accent);padding-bottom:14px;margin-bottom:18px}
-.logo{font-weight:900;font-size:24px;letter-spacing:-.04em} .logo i{display:inline-block;width:9px;height:9px;border:3px solid var(--accent);border-radius:50% 50% 50% 0;transform:rotate(-45deg);margin-right:2px}
+.logo{display:inline-flex;align-items:baseline;font-weight:900;font-size:40px;letter-spacing:-.04em;line-height:1;margin-bottom:10px} .logo i{display:inline-block;flex:none;width:.46em;height:.54em;margin:0 .02em 0 0;border:0;border-radius:0;transform:translateY(-.27em);background:var(--accent,#F8B408);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='97 47 777 907'%3E%3Cpath fill-rule='evenodd' d='M485 823A388 388 0 1 1 745 725L485 952ZM226.5 435a258.5 258.5 0 1 0 517 0a258.5 258.5 0 1 0-517 0Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='97 47 777 907'%3E%3Cpath fill-rule='evenodd' d='M485 823A388 388 0 1 1 745 725L485 952ZM226.5 435a258.5 258.5 0 1 0 517 0a258.5 258.5 0 1 0-517 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .muted{color:var(--muted)} .num{text-align:right;white-space:nowrap}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 14px}
 .kpi{border:1px solid var(--line);border-radius:8px;padding:9px 11px} .kpi.lead{background:#111;color:#fff;border-color:#111}
@@ -2029,7 +2042,7 @@ function highlights(rows, ri){
   const ids=rows.map(r=>r.s.id), A=sums(ids,[ri]), bf=bridgeFor(ids,ri,'m1');
   const prevLow = new Set(ri>0 ? metrics(ri-1).filter(r=>r.lowM).map(r=>r.s.id) : []);
   const inL = rows.filter(r=>r.lowM && !prevLow.has(r.s.id)), outL = rows.filter(r=>!r.lowM && prevLow.has(r.s.id) && r.m.rl>0);
-  const worst = rows.filter(r=>r.m.rl>0).sort((a,b)=>a.m.rob-b.m.rob).slice(0,3);
+  const worst = rows.filter(r=>r.m.rl>0||r.m.rob<0).sort((a,b)=>a.m.rob-b.m.rob).slice(0,3);
   const H=[];
   if(bf){ const w=BR_KEYS.map(([k,l])=>({k,l,v:bf.br[k]})).sort((a,b)=>a.v-b.v)[0];
     H.push(`ROB de ${fR(A.rob)} (${fP(pct(A.rob,A.rl))}), ${fS(bf.br.tot)} vs ${bf.lbl}${w.v<0?`; o maior efeito negativo foi ${w.l.toLowerCase()} (${fS(w.v)})`:''}.`); }
@@ -2058,7 +2071,7 @@ function bookHtml(opt){
   let h=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ROB Lojas · ${esc(title)} · ${esc(mlong(ri))}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700;800;900&display=swap"><style>${BOOK_CSS}</style></head><body>`;
   if(opt.printbar) h+=`<div class="bar-print">Book de análise · use “Salvar como PDF” na impressão (A4 paisagem) <button onclick="window.print()">Imprimir / salvar PDF</button></div>`;
   h+=`<div class="page"><div class="cover"><div><span class="logo"><i></i>comm</span><h1>ROB Lojas · Fechamento ${esc(mlong(ri))}</h1><div class="muted" style="font-size:13px">${esc(title)}${dataR?' · Reunião de '+dataR:''}</div></div><div class="muted" style="text-align:right">Controladoria · Planejamento Financeiro<br>Gerado em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br>Base: ${esc(D.meta.fonte)}${D.meta.importados.length?' + importações':''}</div></div>`;
-  h+=`<h2>1. Resumo executivo</h2><div class="kpis">${k('ROB do mês',`${fK(A.rob)}<small>${fP(pct(A.rob,A.rl))}</small>`,`vs ${ml(ri-1)}: ${dp(A,PV)}`,true)}${k('vs ano anterior',LY?dp(A,LY):'—',`${ml(ri-12)}: ${LY?fP(pct(LY.rob,LY.rl)):'sem base'}`)}${k('ROB 12 meses',`${fK(Y.rob)}<small>${fP(pct(Y.rob,Y.rl))}</small>`,`vs 12M ant.: ${dp(Y,Y1)}`)}${k('Lojas <10% mês',`${rows.filter(r=>r.lowM).length}<small>de ${rows.filter(r=>r.m.rl>0).length}</small>`,`${rows.filter(r=>r.m.rob<0&&r.m.rl>0).length} com ROB negativo`)}${k('Estruturais',rows.filter(r=>r.cls==='Estrutural').length,'mês e 12M abaixo de 10%')}</div>`;
+  h+=`<h2>1. Resumo executivo</h2><div class="kpis">${k('ROB do mês',`${fK(A.rob)}<small>${fP(pct(A.rob,A.rl))}</small>`,`vs ${ml(ri-1)}: ${dp(A,PV)}`,true)}${k('vs ano anterior',LY?dp(A,LY):'—',`${ml(ri-12)}: ${LY?fP(pct(LY.rob,LY.rl)):'sem base'}`)}${k('ROB 12 meses',`${fK(Y.rob)}<small>${fP(pct(Y.rob,Y.rl))}</small>`,`vs 12M ant.: ${dp(Y,Y1)}`)}${k('Lojas <10% mês',`${rows.filter(r=>r.lowM).length}<small>de ${rows.filter(r=>r.m.rl>0).length}</small>`,`${rows.filter(r=>r.m.rob<0).length} com ROB negativo`)}${k('Estruturais',rows.filter(r=>r.cls==='Estrutural').length,'mês e 12M abaixo de 10%')}</div>`;
   h+=`<div class="two"><div><h3>Destaques</h3><ul class="hl">${highlights(rows,ri).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>Ponte do ROB vs ${bf?esc(bf.lbl):'mês anterior'}</h3><div class="wf">${svgOf(d=>waterfall(d,bf?.br,bf?.lbl||'',ml(ri),null,{w:520,h:220}))}</div>${bf?`<div class="diag">${diagText(bf.A,bf.B,bf.br,bf.lbl)}</div>`:''}</div></div>`;
   h+=`<div class="foot">ROB antes da depreciação = receita líquida − CMV − remuneração variável − cartões/fretes − pessoal − área − demais diretas − outras. 12M = soma móvel de ${ml(ri-11)} a ${ml(ri)}.</div></div><div class="page sec"><h2>2. ${sups.length>1?'Quadro por supervisão e DRE':'DRE da carteira'}</h2>`;
   if(sups.length>1){
@@ -2082,10 +2095,10 @@ function bookHtml(opt){
         <div class="two" ><div><h3>Ponte do ROB da carteira vs ${sbf?esc(sbf.lbl):'—'}</h3><div class="wf">${svgOf(d=>waterfall(d,sbf?.br,sbf?.lbl||'',ml(ri),null,{w:520,h:210}))}</div></div><div>${sbf?`<h3>Leitura</h3><div class="diag">${diagText(sbf.A,sbf.B,sbf.br,sbf.lbl)}</div>`:''}</div></div>
         <h3>Loja a loja · ${esc(ml(ri))}</h3>
         <table><thead><tr><th>Loja</th><th>CC</th><th>Região</th><th class="num">RL mês</th><th class="num">ROB mês</th><th class="num">%</th><th class="num">vs ${ml(ri-1)}</th><th>Principal fator</th><th class="num">ROB 12M</th><th class="num">% 12M</th><th class="num">Meses &lt;10%</th><th>Classificação</th><th>Comentário</th></tr></thead><tbody>`+
-        rs.filter(r=>r.m.rl>0||r.y.rl>0).map(r=>`<tr><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu">nova</span>':''}</td><td>${esc(r.s.cc)}</td><td>${esc(r.s.r)}</td><td class="num">${fR(r.m.rl)}</td><td class="num">${fR(r.m.rob)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td><td class="num">${r.ppm!=null&&r.pm!=null?`<span class="${r.pm-r.ppm>=0?'up':'dn'}">${fPP(r.pm-r.ppm)}</span>`:'—'}</td><td>${r.drv?`<span class="${r.drv.k==='ok'?'up':'dn'}">${esc(r.drv.txt)}</span>`:'—'}</td><td class="num">${fR(r.y.rob)}</td><td class="num ${pc(r.p12)}">${fP(r.p12)}</td><td class="num">${r.below}</td><td><span class="pill ${CLS_PILL[r.cls]}">${r.cls}</span></td><td>${needsComment(r)?(COMMENTS[cid(ri,r.s.id)]?'<span class="pill p-ok">ok</span>':'<span class="pill p-acc">pendente</span>'):''}</td></tr>`).join('')+
+        rs.filter(r=>r.m.rl>0||r.y.rl>0||r.m.rob<0||r.y.rob<0).map(r=>`<tr><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu" title="Menos de 12 meses com receita: o 12M soma só os meses desde a abertura">nova · '+r.nm+(r.nm===1?' mês':' meses')+'</span>':''}</td><td>${esc(r.s.cc)}</td><td>${esc(r.s.r)}</td><td class="num">${fR(r.m.rl)}</td><td class="num">${fR(r.m.rob)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td><td class="num">${r.ppm!=null&&r.pm!=null?`<span class="${r.pm-r.ppm>=0?'up':'dn'}">${fPP(r.pm-r.ppm)}</span>`:'—'}</td><td>${r.drv?`<span class="${r.drv.k==='ok'?'up':'dn'}">${esc(r.drv.txt)}</span>`:'—'}</td><td class="num">${fR(r.y.rob)}</td><td class="num ${pc(r.p12)}">${fP(r.p12)}</td><td class="num">${r.below}</td><td><span class="pill ${CLS_PILL[r.cls]}">${r.cls}</span></td><td>${needsComment(r)?(COMMENTS[cid(ri,r.s.id)]?'<span class="pill p-ok">ok</span>':'<span class="pill p-acc">pendente</span>'):''}</td></tr>`).join('')+
         `<tr class="grp"><td colspan="3">Total da carteira</td><td class="num">${fR(a.rl)}</td><td class="num">${fR(a.rob)}</td><td class="num">${fP(pct(a.rob,a.rl))}</td><td class="num">${dp(a,p)}</td><td></td><td class="num">${fR(b12.rob)}</td><td class="num">${fP(pct(b12.rob,b12.rl))}</td><td colspan="3"></td></tr></tbody></table>
 `;
-      const fich = opt.fichas==='none' ? [] : rs.filter(r=>opt.fichas==='all' ? (r.m.rl>0) : needsComment(r)).sort((x,y)=>x.y.rob-y.y.rob);
+      const fich = opt.fichas==='none' ? [] : rs.filter(r=>opt.fichas==='all' ? (r.m.rl>0||needsComment(r)) : needsComment(r)).sort((x,y)=>x.y.rob-y.y.rob);
       if(fich.length){ h+=`<h3 class="sec" style="padding-top:4px">${esc(s)} · Fichas das lojas${opt.fichas==='all'?'':' abaixo de 10%'} (${fich.length})</h3>`; fich.forEach(r=>{ h+=fichaHtml(r,ri); }); }
       h+='</div>';
     });
@@ -2101,12 +2114,12 @@ function bookHtml(opt){
 }
 function lowHtml(rows, ri, n){
   /* regra geral: lojas com ROB abaixo de 10% (mês e 12 meses); negativas são um subconjunto */
-  const lowM = rows.filter(r=>r.m.rl>0 && r.lowM).sort((a,b)=>a.m.rob-b.m.rob);
+  const lowM = rows.filter(r=>r.lowM).sort((a,b)=>a.m.rob-b.m.rob);
   const low12 = rows.filter(r=>r.low12).sort((a,b)=>a.y.rob-b.y.rob);
   const plano = r => { const c=COMMENTS[cid(ri,r.s.id)]; return !c ? '<span class="pill p-acc">sem comentário</span>' : c.conf ? '<span class="muted">confidencial</span>' : c.acao ? esc(c.acao.length>72?c.acao.slice(0,70)+'…':c.acao)+(c.resp?' <span class="muted">· '+esc(c.resp)+'</span>':'') : '<span class="muted">sem plano</span>'; };
   const tab = (list, key, pkey) => { if(!list.length) return '<p class="muted">Nenhuma loja abaixo de 10%.</p>'; const mx=Math.max(...list.map(r=>Math.abs(r[key].rob)))||1;
     return `<table class="neg"><colgroup>${[14.5,10,7,7,6,5,6.5,6.5,5.5,9.5,8,14.5].map(w=>`<col style="width:${w}%">`).join('')}</colgroup><thead><tr><th>Loja</th><th>Supervisão</th><th class="num">RL ${key==='m'?'mês':'12M'}</th><th class="num">ROB ${key==='m'?'mês':'12M'}</th><th style="width:90px"></th><th class="num">%</th>${key==='m'?`<th class="num">ROB ${ml(ri-1)}</th><th class="num">% 12M</th>`:`<th class="num">ROB ${ml(ri)}</th><th class="num">% mês</th>`}<th class="num">Meses &lt;10%</th><th>Principal fator</th><th>Classif.</th><th>Plano de ação</th></tr></thead><tbody>`+
-      list.map(r=>{ const v=r[key].rob; return `<tr><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu">nova</span>':''} <span class="muted">· ${esc(r.s.r)}</span></td><td class="nw">${esc(r.s.s)}</td><td class="num">${fR(r[key].rl)}</td><td class="num ${v<0?'dn':''}"><b>${fR(v)}</b></td><td><span class="neg-bar" style="width:${Math.max(3,Math.abs(v)/mx*86)}px;background:${v<0?'var(--crit)':'var(--warn)'}"></span></td><td class="num ${pc(r[pkey])}">${fP(r[pkey])}</td>${key==='m'?`<td class="num">${r.pmv?fR(r.pmv.rob):'—'}</td><td class="num ${pc(r.p12)}">${fP(r.p12)}</td>`:`<td class="num ${r.m.rob<0?'dn':''}">${fR(r.m.rob)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td>`}<td class="num">${r.below}</td><td class="nw">${r.drv?`<span class="${r.drv.k==='ok'?'up':'dn'}">${esc(r.drv.txt)}</span>`:'—'}</td><td><span class="pill ${CLS_PILL[r.cls]}">${r.cls}</span></td><td class="pl" style="max-width:300px">${plano(r)}</td></tr>`; }).join('')+
+      list.map(r=>{ const v=r[key].rob; return `<tr><td><b>${esc(r.s.n)}</b>${r.isNew?' <span class="pill p-neu" title="Menos de 12 meses com receita: o 12M soma só os meses desde a abertura">nova · '+r.nm+(r.nm===1?' mês':' meses')+'</span>':''} <span class="muted">· ${esc(r.s.r)}</span></td><td class="nw">${esc(r.s.s)}</td><td class="num">${fR(r[key].rl)}</td><td class="num ${v<0?'dn':''}"><b>${fR(v)}</b></td><td><span class="neg-bar" style="width:${Math.max(3,Math.abs(v)/mx*86)}px;background:${v<0?'var(--crit)':'var(--warn)'}"></span></td><td class="num ${pc(r[pkey])}">${fP(r[pkey])}</td>${key==='m'?`<td class="num">${r.pmv?fR(r.pmv.rob):'—'}</td><td class="num ${pc(r.p12)}">${fP(r.p12)}</td>`:`<td class="num ${r.m.rob<0?'dn':''}">${fR(r.m.rob)}</td><td class="num ${pc(r.pm)}">${fP(r.pm)}</td>`}<td class="num">${r.below}</td><td class="nw">${r.drv?`<span class="${r.drv.k==='ok'?'up':'dn'}">${esc(r.drv.txt)}</span>`:'—'}</td><td><span class="pill ${CLS_PILL[r.cls]}">${r.cls}</span></td><td class="pl" style="max-width:300px">${plano(r)}</td></tr>`; }).join('')+
       `<tr class="grp"><td colspan="3">Total (${list.length} lojas)</td><td class="num">${fR(list.reduce((a,r)=>a+r[key].rob,0))}</td><td colspan="2"></td><td colspan="6" class="muted" style="font-weight:600">${list.filter(r=>r[key].rob<0).length} com ROB negativo (${fR(list.filter(r=>r[key].rob<0).reduce((a,r)=>a+r[key].rob,0))})</td></tr></tbody></table>`; };
   const bySup = {}; lowM.forEach(r=>{ const b=bySup[r.s.s]??={n:0,v:0}; b.n++; b.v+=r.m.rob; });
   const est = rows.filter(r=>r.cls==='Estrutural').length, negM = lowM.filter(r=>r.m.rob<0);
@@ -2115,7 +2128,7 @@ function lowHtml(rows, ri, n){
     ${Object.keys(bySup).length>1?`<p class="muted" style="margin:0 0 6px">Por supervisão (mês): ${Object.entries(bySup).sort((a,b)=>b[1].n-a[1].n).map(([s,b])=>`<b style="color:var(--ink)">${esc(s)}</b> ${b.n} (${fK(b.v)})`).join(' · ')}</p>`:''}
     <h3>ROB abaixo de 10% em ${esc(mlong(ri))}</h3>${tab(lowM,'m','pm')}
     <h3 class="${lowM.length>8?'pb':''}" style="margin-top:14px">ROB abaixo de 10% nos últimos 12 meses (${ml(ri-11)} a ${ml(ri)})</h3>${tab(low12,'y','p12')}
-    <div class="foot">Regra geral do ROB Lojas: atenção para lojas com ROB abaixo de 10% da receita líquida, no mês e em 12 meses. Barras vermelhas = ROB negativo; laranja = positivo, mas abaixo de 10%. Meses &lt;10% = quantos dos últimos 12 meses a loja ficou abaixo do corte. Lojas novas (menos de 12 meses) ficam fora da lista de 12M.</div></div>`;
+    <div class="foot">Regra geral do ROB Lojas: atenção para lojas com ROB abaixo de 10% da receita líquida, no mês e em 12 meses. Barras vermelhas = ROB negativo; laranja = positivo, mas abaixo de 10%. Meses &lt;10% = quantos dos últimos 12 meses a loja ficou abaixo do corte. Lojas novas (menos de 12 meses) entram na lista de 12M com o selo “nova”: o acumulado soma só os meses desde a abertura.</div></div>`;
 }
 function fichaHtml(r, ri){
   const id=r.s.id, A=r.m, P=r.pmv, cv=COV[r.s.e]||0, L=ri-12>=cv?sums([id],[ri-12]):null, Y=r.y, c=COMMENTS[cid(ri,id)], bf=bridgeFor([id],ri,'m1');
@@ -2242,8 +2255,8 @@ $('btnXls').onclick = e => withBusy(e.target, async()=>{
   const kp=[['ROB DO MÊS',A.rob,XF.K,p(A),`vs ${ml(ri-1)}: `+(PV?fPP(p(A)-p(PV)):'—'),true],
     ['VS ANO ANTERIOR',LY?ppv(p(A)-p(LY)):null,XF.PP,null,`${ml(ri-12)}: ${LY?fP(p(LY)):'sem base'}`],
     ['ROB 12 MESES',Y.rob,XF.K,p(Y),`vs 12M ant.: ${Y1?fPP(p(Y)-p(Y1)):'sem base'}`],
-    ['LOJAS <10% NO MÊS',rows.filter(r=>r.lowM).length,XF.I,null,`de ${rows.filter(r=>r.m.rl>0).length} · ${rows.filter(r=>r.m.rob<0&&r.m.rl>0).length} negativas`],
-    ['LOJAS <10% EM 12M',rows.filter(r=>r.low12).length,XF.I,null,`${rows.filter(r=>r.y.rob<0&&!r.isNew).length} negativas`],
+    ['LOJAS <10% NO MÊS',rows.filter(r=>r.lowM).length,XF.I,null,`de ${rows.filter(r=>r.m.rl>0).length} · ${rows.filter(r=>r.m.rob<0).length} negativas`],
+    ['LOJAS <10% EM 12M',rows.filter(r=>r.low12).length,XF.I,null,`${rows.filter(r=>r.y.rob<0).length} negativas`],
     ['ESTRUTURAIS',rows.filter(r=>r.cls==='Estrutural').length,XF.I,null,'mês e 12M abaixo de 10%']];
   // 6 cartões em 12 colunas
   kp.forEach((k,i)=>{ const c0=1+i*2; ws.mergeCells(5,c0,5,c0+1); ws.mergeCells(6,c0,6,c0+1); ws.mergeCells(7,c0,7,c0+1);
@@ -2282,7 +2295,7 @@ $('btnXls').onclick = e => withBusy(e.target, async()=>{
   // piores lojas
   r++; xSection(ws, r, `10 piores ROB do mês · ${ml(ri)}`, NC); r++;
   xHeader(ws, r, ['Loja','Supervisão','ROB mês','ROB %','ROB 12M','ROB % 12M','Classificação','Principal fator vs mês anterior'], {right:[2,3,4,5]}); ws.mergeCells(r,8,r,NC); r++;
-  rows.filter(x=>x.m.rl>0).sort((a,b)=>a.m.rob-b.m.rob).slice(0,10).forEach((x,i)=>{ const row=xRow(ws,r,[x.s.n,x.s.s,x.m.rob,x.pm,x.y.rob,x.p12,x.cls,x.drv?x.drv.txt:''],[null,null,XF.R,XF.P,XF.R,XF.P,null,null],{fill:i%2?XC.bg2:undefined});
+  rows.filter(x=>x.m.rl>0||x.m.rob<0).sort((a,b)=>a.m.rob-b.m.rob).slice(0,10).forEach((x,i)=>{ const row=xRow(ws,r,[x.s.n,x.s.s,x.m.rob,x.pm,x.y.rob,x.p12,x.cls,x.drv?x.drv.txt:''],[null,null,XF.R,XF.P,XF.R,XF.P,null,null],{fill:i%2?XC.bg2:undefined});
     xPct(row.getCell(4),x.pm); xPct(row.getCell(6),x.p12); xPill(row.getCell(7),x.cls); ws.mergeCells(r,8,r,NC); r++; });
   xPrint(ws);
 
@@ -3064,7 +3077,7 @@ function hideApp(){
   if(dlg.open) dlg.close();
 }
 function lgCard(inner){ const g=$('loginGate'); g.hidden=false; hideApp(); g.innerHTML=`<div class="lg-card"><div class="lg-brand"><span class="logo" aria-label="Comm"><i></i>comm</span><span class="muted">·</span><b>ROB Lojas</b></div>${inner}</div>`; return g; }
-function whoHtml(){ const p=ROLE.cadPerfil?PERFIS[ROLE.cadPerfil]:(PERFIL_LBL[ROLE.perfil]||''); return `<div class="lg-who"><img src="${esc(ME?.avatarUrl||'')}" alt=""><div><b>${esc(ME?.name||'Usuário')}</b><span>${esc(p)}</span></div></div>`; }
+function whoHtml(){ const p=ROLE.cadPerfil?PERFIS[ROLE.cadPerfil]:(PERFIL_LBL[ROLE.perfil]||''); return `<div class="lg-who"><img src="${esc(avatarSrc(ME?.avatarUrl, ME?.name))}" alt=""><div><b>${esc(ME?.name||'Usuário')}</b><span>${esc(p)}</span></div></div>`; }
 const pwRule = p => p.length>=8 && /[A-Za-z]/.test(p) && /\d/.test(p);
 
 async function showLogin(mode){
@@ -3195,7 +3208,7 @@ function renderLinkChip(){
   else el.innerHTML='<span class="pill p-acc">Aguardando primeiro acesso</span><span class="muted">A pessoa abre o painel, pede acesso e você aprova o vínculo na lista de pedidos. Ou busque o nome acima para vincular agora.</span>';
 }
 const aBusca=$('aBusca'), aList=$('aList');
-async function aSearch(q){ if(!USER){ aList.hidden=true; return; } const hits=await USER.search(q); aList.innerHTML=''; hits.forEach(h=>{ const b=document.createElement('button'); b.type='button'; const img=document.createElement('img'); img.src=h.avatarUrl||''; img.alt=''; const t=document.createElement('span'); t.textContent=h.name; b.append(img,t); b.onclick=()=>{ PROF[h.id]=h; AF.linked=h.id; if(!$('aNome').value) $('aNome').value=h.name; aList.hidden=true; aBusca.value=''; renderLinkChip(); }; aList.appendChild(b); }); aList.hidden=!hits.length; }
+async function aSearch(q){ if(!USER){ aList.hidden=true; return; } const hits=await USER.search(q); aList.innerHTML=''; hits.forEach(h=>{ const b=document.createElement('button'); b.type='button'; const img=document.createElement('img'); img.src=avatarSrc(h.avatarUrl, h.name||h.email); img.alt=''; const t=document.createElement('span'); t.textContent=h.name; b.append(img,t); b.onclick=()=>{ PROF[h.id]=h; AF.linked=h.id; if(!$('aNome').value) $('aNome').value=h.name; aList.hidden=true; aBusca.value=''; renderLinkChip(); }; aList.appendChild(b); }); aList.hidden=!hits.length; }
 aBusca.addEventListener('focus',()=>aSearch(aBusca.value||'')); aBusca.addEventListener('input',()=>aSearch(aBusca.value));
 document.addEventListener('click',e=>{ if(!e.target.closest('#pnAcc .ta')) aList.hidden=true; });
 function fillForm(key, d, linked){
@@ -3996,7 +4009,7 @@ let EMAIL = '', PERFIL = null, PERFIS_CACHE = {};
 function card(html){ const g=$('sbGate'); g.hidden=false; g.innerHTML=`<div class="sb-card"><div class="sb-brand"><span class="logo" aria-label="Comm"><i></i>comm</span><span class="sb-sep"></span><b>ROB Lojas</b></div>${html}</div>`; return g; }
 const msg = (t, ok) => { const m=$('sbMsg'); if(m) m.innerHTML = t ? `<span class="${ok?'sb-ok':'sb-err'}">${esc(t)}</span>` : ''; };
 const busy = (b, on, txt) => { if(!b) return; b.disabled=on; if(txt) b.textContent=txt; };
-const ERR = e => { const m=(e&&e.message)||String(e||''); if(/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.'; if(/Email not confirmed/i.test(m)) return 'Confirme o e-mail pelo link que enviamos antes de entrar.'; if(/already registered|already been registered/i.test(m)) return 'Este e-mail já tem conta. Use “Entrar” ou “Esqueci minha senha”.'; if(/Password should be/i.test(m)) return 'A senha precisa ter pelo menos 8 caracteres.'; if(/rate limit/i.test(m)) return 'Muitas tentativas. Aguarde alguns minutos.'; return m||'Não foi possível concluir. Tente de novo.'; };
+const ERR = e => { const m=(e&&e.message)||String(e||''); if(/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.'; if(/Email not confirmed/i.test(m)) return 'Confirme o e-mail pelo link que enviamos antes de entrar.'; if(/already registered|already been registered/i.test(m)) return 'Este e-mail já tem conta. Use “Entrar” ou “Esqueci minha senha”.'; if(/Password should be/i.test(m)) return 'A senha precisa ter pelo menos 8 caracteres.'; if(/different from the old/i.test(m)) return 'A nova senha precisa ser diferente da senha provisória.'; if(/rate limit/i.test(m)) return 'Muitas tentativas. Aguarde alguns minutos.'; return m||'Não foi possível concluir. Tente de novo.'; };
 
 function telaEntrar(){
   card(`<h2>Entrar</h2>
@@ -4004,7 +4017,7 @@ function telaEntrar(){
     <label>Senha<input type="password" id="sbPw" autocomplete="current-password" required></label>
     <div id="sbMsg" class="sb-msg"></div><button class="btn" type="submit" id="sbGo">Entrar</button></form>
     <div class="sb-links"><button class="linkish" type="button" id="sbEsq">Esqueci minha senha</button></div>
-    <div class="sb-foot">Acesso restrito. No primeiro acesso, use a senha provisória enviada pela Controladoria (Planejamento Financeiro) e troque pelo botão <b>Senha</b> no topo do painel.</div>`);
+    <div class="sb-foot">Acesso restrito. No primeiro acesso, entre com a senha provisória enviada pela Controladoria (Planejamento Financeiro); em seguida o painel pede para você criar a sua senha.</div>`);
   $('sbEm').focus();
   $('sbEsq').onclick=telaEsqueci;
   $('sbF').onsubmit=async e=>{ e.preventDefault(); const b=$('sbGo'); busy(b,true,'Entrando…'); msg('');
@@ -4037,14 +4050,15 @@ function telaEsqueci(){
     const {error}=await sb.auth.resetPasswordForEmail($('sbEm').value.trim().toLowerCase(), {redirectTo:location.origin+location.pathname});
     busy(b,false,'Enviar link'); if(error){ msg(ERR(error)); return; } msg('Se o e-mail estiver cadastrado, o link chega em alguns minutos.', true); };
 }
-function telaNovaSenha(){
-  card(`<h2>Nova senha</h2><form id="sbF" class="sb-form"><label>Nova senha<input type="password" id="sbP1" autocomplete="new-password" required></label><label>Repita a senha<input type="password" id="sbP2" autocomplete="new-password" required></label>
+function telaNovaSenha(primeiro){
+  card(`${primeiro?'<h2>Crie sua senha</h2><p class="muted">Primeiro acesso: troque a senha provisória por uma senha só sua (mínimo de 8 caracteres, com letras e números).</p>':'<h2>Nova senha</h2>'}<form id="sbF" class="sb-form"><label>Nova senha<input type="password" id="sbP1" autocomplete="new-password" required></label><label>Repita a senha<input type="password" id="sbP2" autocomplete="new-password" required></label>
     <div id="sbMsg" class="sb-msg"></div><button class="btn" type="submit" id="sbGo">Salvar e entrar</button></form>`);
   $('sbP1').focus();
   $('sbF').onsubmit=async e=>{ e.preventDefault(); const p1=$('sbP1').value, p2=$('sbP2').value;
     if(p1.length<8 || !/[A-Za-z]/.test(p1) || !/\d/.test(p1)){ msg('A senha precisa ter 8 caracteres, com letras e números.'); return; }
     if(p1!==p2){ msg('As duas senhas não são iguais.'); return; }
-    const {error}=await sb.auth.updateUser({password:p1}); if(error){ msg(ERR(error)); return; }
+    const b=$('sbGo'); busy(b,true,'Salvando…'); const {error}=await sb.auth.updateUser({password:p1}); if(error){ busy(b,false,'Salvar e entrar'); msg(ERR(error)); return; }
+    await sb.auth.refreshSession();
     history.replaceState(null,'',location.pathname); iniciar(); };
 }
 async function telaSemAcesso(bloqueado){
@@ -4204,6 +4218,7 @@ function telaMigrar(vazia){
 async function iniciar(){
   const {data:{session}} = await sb.auth.getSession();
   if(!session){ telaEntrar(); return; }
+  if(session.user?.app_metadata?.trocar_senha){ telaNovaSenha(true); return; }
   EMAIL = String(session.user.email||'').toLowerCase();
   const {data:perf} = await sb.from('perfis').select('*').eq('email', EMAIL).maybeSingle();
   PERFIL = perf || null;

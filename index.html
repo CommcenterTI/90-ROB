@@ -531,7 +531,7 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
     <div class="intro"><div><h2>Configuração</h2><p>Acessos dos usuários, carga mensal da base e backup de comentários. Só administradores veem esta aba.</p></div></div>
     <div class="cfg">
       <div class="panel">
-        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. O login (e-mail e senha provisória) é criado no Supabase, em Authentication → Users. O banco só entrega a cada pessoa as lojas do seu cadastro.</div></div></div>
+        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. Ao salvar, o login é criado automaticamente com a senha provisória padrão; no primeiro acesso a pessoa cria a própria senha. O banco só entrega a cada pessoa as lojas do seu cadastro.</div></div></div>
         <div class="form" id="acForm">
           <label class="full">Pessoa<div class="ta"><input id="acBusca" autocomplete="off" placeholder="Digite o nome ou e-mail"><div class="ta-list" id="acList" hidden></div></div></label>
           <div class="full" id="acSel"></div>
@@ -1966,7 +1966,7 @@ $('acSave').onclick=async()=>{
   if(perfil==='regional'&&!regs.length){ $('acMsg').textContent='Marque ao menos uma região.'; return; }
   const doc={perfil, sups:perfil==='supervisor'?sups:[], regs:perfil==='regional'?regs:[], exporta:$('acExp').checked, ativo:true, em:new Date().toISOString(), por:ME?.id||null};
   $('acSave').disabled=true;
-  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo. Se a pessoa ainda não tem login, crie no Supabase (Authentication → Users).'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
+  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo. Se a pessoa ainda não tinha login, ele foi criado com a senha provisória padrão.'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
   catch(e){ $('acMsg').textContent='Não foi possível salvar (é preciso perfil Administrador).'; $('acSave').disabled=false; }
 };
 async function renderImports(){
@@ -2338,17 +2338,19 @@ $('btnXls').onclick = e => withBusy(e.target, async()=>{
     if(cls==='ind') row.getCell(1).alignment={indent:2}; if(k==='%') vals.forEach((v,j)=>xPct(row.getCell(j+2),v)); dr++; });
   xPrint(wd);
 
-  /* 4. DRE por loja (todos os meses) */
+  /* 4. DRE por loja (todos os meses): cada mês com valor e % da receita líquida */
   const wm=wb.addWorksheet('DRE por loja', {views:[{state:'frozen',xSplit:4,ySplit:4,showGridLines:false}]});
   const all=range(0,D.months.length-1);
-  const MH=['Loja','Supervisão','Status','Linha DRE'].concat(all.map(ml));
-  xWidths(wm,[30,20,9,34].concat(all.map(()=>11)));
-  xBand(wm, 'DRE por loja · mês a mês', genInfo(), MH.length);
+  const MH=['Loja','Supervisão','Status','Linha DRE'].concat(...all.map(i=>[ml(i),'% RL']));
+  xWidths(wm,[30,20,9,34].concat(...all.map(()=>[11,8])));
+  xBand(wm, 'DRE por loja · mês a mês', genInfo()+' · % sobre a receita líquida do mês', MH.length);
   xHeader(wm, 4, MH, {right:range(4,MH.length-1)});
   let mr=5; const pool=ST.filter(s=>!state.sup||s.s===state.sup).sort((a,b)=>a.st.localeCompare(b.st)||a.s.localeCompare(b.s)||a.n.localeCompare(b.n));
   pool.forEach(s=>{ const cs=all.map(i=>sums([s.id],[i]));
-    DRE_ROWS.forEach(([k,lab,cls])=>{ const row=xRow(wm,mr,[s.n,s.s,s.st==='A'?'Ativa':'Encerrada',lab.replace('(−) ','')].concat(cs.map(c=>Math.round(c[k]))),[null,null,null,null].concat(all.map(()=>XF.R)),{bold:cls==='key',fill:cls==='key'?XC.accSoft:undefined});
-      if(cls==='key') row.getCell(1).font={name:FONT,size:10,bold:true}; mr++; }); });
+    DRE_ROWS.forEach(([k,lab,cls])=>{ const strong=cls!=='ind';
+      const vals=[].concat(...cs.map(c=>[Math.round(c[k]), pct(c[k],c.rl)]));
+      const row=xRow(wm,mr,[s.n,s.s,s.st==='A'?'Ativa':'Encerrada',lab.replace('(−) ','')].concat(vals),[null,null,null,null].concat(...all.map(()=>[XF.R,'0.0%'])),{bold:strong,fill:cls==='key'?XC.accSoft:cls==='sub'?XC.bg:undefined});
+      if(strong) row.getCell(1).font={name:FONT,size:10,bold:true}; mr++; }); });
   wm.autoFilter={from:{row:4,column:1},to:{row:mr-1,column:MH.length}};
 
   /* 5. Comentários */
@@ -2924,7 +2926,7 @@ $('spExp').onclick = e => withBusy(e.target, async()=>{
    'Supervisor novo: escreva o nome completo; ele é cadastrado na importação. Para já deixar o cadastro pronto (empresa e regiões), inclua uma linha na aba Supervisores.',
    'O mês de início vale para frente: os meses anteriores continuam com o supervisor anterior nos números, na pauta e no book.',
    'No painel: Configuração → Supervisores e carteiras → Importar ajustes. Confira a prévia e grave.',
-   'Depois, cadastre o acesso do supervisor novo em Configuração → Acessos e crie o login dele no Supabase.'].forEach((t,i)=>{ const a=wi.getCell(i+2,1), b=wi.getCell(i+2,2); a.value=i+1; a.fill=xfill(XC.acc); a.font={name:FONT,bold:true}; a.alignment={horizontal:'center',vertical:'middle'}; b.value=t; b.alignment={wrapText:true,vertical:'middle',indent:1}; wi.getRow(i+2).height=32; });
+   'Depois, cadastre o acesso do supervisor novo em Configuração → Acessos (o login é criado automaticamente).'].forEach((t,i)=>{ const a=wi.getCell(i+2,1), b=wi.getCell(i+2,2); a.value=i+1; a.fill=xfill(XC.acc); a.font={name:FONT,bold:true}; a.alignment={horizontal:'center',vertical:'middle'}; b.value=t; b.alignment={wrapText:true,vertical:'middle',indent:1}; wi.getRow(i+2).height=32; });
   await xSave(wb, `Carteiras_supervisao_${last}.xlsx`);
 });
 let SP_PEND=null;
@@ -3162,7 +3164,7 @@ function applyPermsSafe(){ try{ applyPerms(); }catch(e){} }
   document.head.appendChild(st);
   const old=document.getElementById('acForm')?.closest('.panel'); if(!old) return;
   const p=document.createElement('div'); p.className='panel'; p.id='pnAcc';
-  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. O login é criado no Supabase (Authentication → Users, com senha provisória); no primeiro acesso a pessoa troca a senha pelo botão <b>Senha</b>. Quem só tem login, sem cadastro aqui, não recebe dados.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
+  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. Ao salvar, o login é criado automaticamente com a senha provisória padrão; no primeiro acesso o painel pede para a pessoa criar a própria senha. Quem só tem login, sem cadastro aqui, não recebe dados.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
     <form id="aForm" class="acc-grid" autocomplete="off">
       <div class="acc-box"><h4 id="aTit">Novo acesso</h4>
         <div class="form">

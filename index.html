@@ -531,7 +531,7 @@ textarea.mail{width:100%;min-height:220px;font-family:ui-monospace,Menlo,Consola
     <div class="intro"><div><h2>Configuração</h2><p>Acessos dos usuários, carga mensal da base e backup de comentários. Só administradores veem esta aba.</p></div></div>
     <div class="cfg">
       <div class="panel">
-        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. Ao salvar, o login é criado automaticamente com a senha provisória padrão; no primeiro acesso a pessoa cria a própria senha. O banco só entrega a cada pessoa as lojas do seu cadastro.</div></div></div>
+        <div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre cada pessoa com o perfil e as carteiras que ela pode ver. Ao salvar uma pessoa nova, o painel gera uma senha provisória aleatória; no primeiro acesso a pessoa cria a própria senha. O banco só entrega a cada pessoa as lojas do seu cadastro.</div></div></div>
         <div class="form" id="acForm">
           <label class="full">Pessoa<div class="ta"><input id="acBusca" autocomplete="off" placeholder="Digite o nome ou e-mail"><div class="ta-list" id="acList" hidden></div></div></label>
           <div class="full" id="acSel"></div>
@@ -1966,7 +1966,7 @@ $('acSave').onclick=async()=>{
   if(perfil==='regional'&&!regs.length){ $('acMsg').textContent='Marque ao menos uma região.'; return; }
   const doc={perfil, sups:perfil==='supervisor'?sups:[], regs:perfil==='regional'?regs:[], exporta:$('acExp').checked, ativo:true, em:new Date().toISOString(), por:ME?.id||null};
   $('acSave').disabled=true;
-  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo. Se a pessoa ainda não tinha login, ele foi criado com a senha provisória padrão.'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
+  try{ await DB.doc('acessos/'+AC_SEL.id).set(doc); ACESSOS[AC_SEL.id]=doc; $('acMsg').textContent='Acesso salvo.'; AC_SEL=null; $('acSel').innerHTML=''; renderConfig(); }
   catch(e){ $('acMsg').textContent='Não foi possível salvar (é preciso perfil Administrador).'; $('acSave').disabled=false; }
 };
 async function renderImports(){
@@ -3164,7 +3164,7 @@ function applyPermsSafe(){ try{ applyPerms(); }catch(e){} }
   document.head.appendChild(st);
   const old=document.getElementById('acForm')?.closest('.panel'); if(!old) return;
   const p=document.createElement('div'); p.className='panel'; p.id='pnAcc';
-  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. Ao salvar, o login é criado automaticamente com a senha provisória padrão; no primeiro acesso o painel pede para a pessoa criar a própria senha. Quem só tem login, sem cadastro aqui, não recebe dados.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
+  p.innerHTML=`<div class="ph"><div><h3>Acessos</h3><div class="sub">Cadastre a pessoa com nome e e-mail, escolha o tipo de acesso, as empresas, a abrangência (regiões ou carteiras) e os relatórios. Ao salvar uma pessoa nova, o painel gera uma senha provisória aleatória e mostra para você enviar; no primeiro acesso o painel pede para a pessoa criar a própria senha. Para gerar outra, use “Nova senha”. Quem só tem login, sem cadastro aqui, não recebe dados.</div></div><div class="filters"><button class="btn ghost" id="aNovo" type="button">Novo acesso</button></div></div>
     <form id="aForm" class="acc-grid" autocomplete="off">
       <div class="acc-box"><h4 id="aTit">Novo acesso</h4>
         <div class="form">
@@ -3249,10 +3249,13 @@ $('aForm').onsubmit=async e=>{
   try{ await DB.doc('acessos/'+key).set(doc); ACESSOS[key]=doc;
     if(AF.key && AF.key!==key){ await DB.doc('acessos/'+AF.key).delete(); delete ACESSOS[AF.key]; }
     if(AF.linked && SOLIC[AF.linked]?.tipo==='acesso'){ await DB.doc('solicitacoes/'+AF.linked).delete(); delete SOLIC[AF.linked]; }
-    toast(AF.linked?'Acesso salvo e vinculado.':'Acesso salvo. Será vinculado no primeiro acesso da pessoa.'); fillForm(null,{}); renderAccessUI(); reinit();
+    const novo=!AF.key && !Object.entries(ACESSOS).some(([k2,v2])=>k2!==key && (v2.email||'').toLowerCase()===email);
+    toast('Acesso salvo.'); fillForm(null,{}); renderAccessUI(); reinit();
+    if(novo) await geraSenhaUI(nome,email);
   }catch(err){ m.innerHTML='<span class="errline">Não foi possível salvar (é preciso ser Editor do painel).</span>'; }
   $('aSave').disabled=false;
 };
+async function geraSenhaUI(nome,email){ if(!window.ROB_SENHA){ toast('Disponível só no site.'); return false; } try{ const pw=await window.ROB_SENHA(email); window.ROB_MOSTRA_SENHA(nome,email,pw); return true; }catch(e){ toast('Não foi possível gerar a senha: '+((e&&e.message)||e)); return false; } }
 function lastAccess(uid){ let t=null; for(const l of Object.values(LOGS)) if(l.uid===uid && l.evento==='entrada' && (!t||l.em>t)) t=l.em; return t; }
 const fdt = s => s ? new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—';
 let LOGS_AT=0;
@@ -3282,7 +3285,7 @@ async function renderAccessUI(){
     const acts=tr.querySelector('.acts');
     const btn=(t,f,g)=>{ const b=document.createElement('button'); b.type='button'; b.className='btn'+(g?' ghost':''); b.style.cssText='padding:3px 10px;margin:2px'; b.textContent=t; b.onclick=f; acts.appendChild(b); return b; };
     if(s.tipo==='senha'){
-      btn('Liberar nova senha', async()=>{ if(!ACESSOS[uid]){ toast('Essa pessoa não tem cadastro.'); return; } try{ const d=Object.assign({},ACESSOS[uid],{resetSenha:new Date().toISOString()}); await DB.doc('acessos/'+uid).set(d); ACESSOS[uid]=d; await DB.doc('solicitacoes/'+uid).delete(); delete SOLIC[uid]; toast('Nova senha liberada.'); renderAccessUI(); }catch(e){ toast('Não foi possível liberar.'); } });
+      btn('Gerar nova senha', async()=>{ const a=ACESSOS[uid]; if(!a){ toast('Essa pessoa não tem cadastro.'); return; } if(!await geraSenhaUI(a.nome, a.email||s.email)) return; try{ await DB.doc('solicitacoes/'+uid).delete(); delete SOLIC[uid]; }catch(e){} renderAccessUI(); });
     } else {
       if(sug) btn('Vincular a “'+sug[1].nome+'”', ()=>linkPend(uid, sug[0]));
       if(pend.length){ const sel=document.createElement('select'); sel.style.cssText='margin:2px;max-width:180px'; sel.innerHTML='<option value="">Vincular a cadastro…</option>'+pend.map(([k,v])=>`<option value="${esc(k)}">${esc(v.nome)}</option>`).join(''); sel.onchange=()=>{ if(sel.value) linkPend(uid, sel.value); }; acts.appendChild(sel); }
@@ -3301,7 +3304,7 @@ async function renderAccessUI(){
     tr.innerHTML=`<td><b>${esc(v.nome||PROF[k]?.name||'(sem nome)')}</b></td><td>${esc(v.email||'—')}</td><td>${esc(PERFIS[v.perfil]||v.perfil||'')}</td><td style="max-width:220px">${esc(abr)}</td><td title="${esc(tabs.map(t=>TAB_LBL[t]).join(', '))}">${tabs.length} de ${Object.keys(TAB_LBL).length}${v.exporta===false?' · sem Excel':''}${v.book===false?' · sem book':''}</td><td>${linked?'<span class="pill p-ok">Vinculada</span>':'<span class="pill p-acc">Aguardando 1º acesso</span>'}</td><td>${linked?fdt(lastAccess(k)):'—'}</td><td>${v.ativo===false?'<span class="pill p-crit">Bloqueado</span>':'<span class="pill p-ok">Ativo</span>'}${v.resetSenha?'<div class="muted" style="font-size:11px">nova senha liberada</div>':''}</td><td class="num acts"></td>`;
     const acts=tr.querySelector('.acts'); const btn=(t,f)=>{ const b=document.createElement('button'); b.type='button'; b.className='btn ghost'; b.style.cssText='padding:3px 9px;margin:1px'; b.textContent=t; b.onclick=f; acts.appendChild(b); };
     btn('Editar', ()=>{ fillForm(k, v, linked?k:null); $('pnAcc').scrollIntoView({behavior:'smooth'}); });
-    if(linked) btn('Nova senha', async()=>{ if(!confirmInline(tr,'Liberar nova senha? A pessoa vai criar outra no próximo acesso.')) return; try{ const d=Object.assign({},v,{resetSenha:new Date().toISOString()}); await DB.doc('acessos/'+k).set(d); ACESSOS[k]=d; toast('Nova senha liberada.'); renderAccessUI(); }catch(e){ toast('Não foi possível.'); } });
+    if(v.email) btn('Nova senha', async()=>{ if(!confirmInline(tr,'Gerar nova senha provisória? A senha atual da pessoa deixa de valer.')) return; await geraSenhaUI(v.nome, v.email); });
     btn(v.ativo===false?'Ativar':'Bloquear', async()=>{ try{ const d=Object.assign({},v,{ativo:v.ativo===false}); await DB.doc('acessos/'+k).set(d); ACESSOS[k]=d; toast(d.ativo?'Acesso ativado.':'Acesso bloqueado.'); renderAccessUI(); }catch(e){ toast('Não foi possível.'); } });
     btn('Remover', async()=>{ if(!confirmInline(tr,'Remover este acesso?')) return; try{ await DB.doc('acessos/'+k).delete(); delete ACESSOS[k]; renderAccessUI(); toast('Acesso removido.'); }catch(e){ toast('Não foi possível remover.'); } });
     tu.appendChild(tr); });
@@ -4011,7 +4014,7 @@ let EMAIL = '', PERFIL = null, PERFIS_CACHE = {};
 function card(html){ const g=$('sbGate'); g.hidden=false; g.innerHTML=`<div class="sb-card"><div class="sb-brand"><span class="logo" aria-label="Comm"><i></i>comm</span><span class="sb-sep"></span><b>ROB Lojas</b></div>${html}</div>`; return g; }
 const msg = (t, ok) => { const m=$('sbMsg'); if(m) m.innerHTML = t ? `<span class="${ok?'sb-ok':'sb-err'}">${esc(t)}</span>` : ''; };
 const busy = (b, on, txt) => { if(!b) return; b.disabled=on; if(txt) b.textContent=txt; };
-const ERR = e => { const m=(e&&e.message)||String(e||''); if(/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.'; if(/Email not confirmed/i.test(m)) return 'Confirme o e-mail pelo link que enviamos antes de entrar.'; if(/already registered|already been registered/i.test(m)) return 'Este e-mail já tem conta. Use “Entrar” ou “Esqueci minha senha”.'; if(/Password should be/i.test(m)) return 'A senha precisa ter pelo menos 8 caracteres.'; if(/different from the old/i.test(m)) return 'A nova senha precisa ser diferente da senha provisória.'; if(/rate limit/i.test(m)) return 'Muitas tentativas. Aguarde alguns minutos.'; return m||'Não foi possível concluir. Tente de novo.'; };
+const ERR = e => { const m=(e&&e.message)||String(e||''); if(/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.'; if(/Email not confirmed/i.test(m)) return 'Confirme o e-mail pelo link que enviamos antes de entrar.'; if(/Password should be/i.test(m)) return 'A senha precisa ter pelo menos 8 caracteres.'; if(/different from the old/i.test(m)) return 'A nova senha precisa ser diferente da senha provisória.'; if(/rate limit/i.test(m)) return 'Muitas tentativas. Aguarde alguns minutos.'; return m||'Não foi possível concluir. Tente de novo.'; };
 
 function telaEntrar(){
   card(`<h2>Entrar</h2>
@@ -4026,22 +4029,24 @@ function telaEntrar(){
     const {error}=await sb.auth.signInWithPassword({email:$('sbEm').value.trim().toLowerCase(), password:$('sbPw').value});
     if(error){ busy(b,false,'Entrar'); msg(ERR(error)); return; } iniciar(); };
 }
-function telaCriar(){
-  card(`<h2>Primeiro acesso</h2><p class="muted">Use o e-mail que a Controladoria cadastrou e crie sua senha (mínimo de 8 caracteres, com letras e números).</p>
-    <form id="sbF" class="sb-form"><label>E-mail corporativo<input type="email" id="sbEm" autocomplete="username" required></label>
-    <label>Senha<input type="password" id="sbP1" autocomplete="new-password" required></label><label>Repita a senha<input type="password" id="sbP2" autocomplete="new-password" required></label>
-    <div id="sbMsg" class="sb-msg"></div><button class="btn" type="submit" id="sbGo">Criar senha</button></form>
-    <div class="sb-links"><button class="linkish" type="button" id="sbVolta">Voltar para entrar</button></div>`);
-  $('sbEm').focus(); $('sbVolta').onclick=telaEntrar;
-  $('sbF').onsubmit=async e=>{ e.preventDefault(); const p1=$('sbP1').value, p2=$('sbP2').value;
-    if(p1.length<8 || !/[A-Za-z]/.test(p1) || !/\d/.test(p1)){ msg('A senha precisa ter 8 caracteres, com letras e números.'); return; }
-    if(p1!==p2){ msg('As duas senhas não são iguais.'); return; }
-    const b=$('sbGo'); busy(b,true,'Criando…');
-    const {data,error}=await sb.auth.signUp({email:$('sbEm').value.trim().toLowerCase(), password:p1, options:{emailRedirectTo:location.origin+location.pathname}});
-    if(error){ busy(b,false,'Criar senha'); msg(ERR(error)); return; }
-    if(data.session){ iniciar(); return; }
-    msg('Conta criada. Enviamos um e-mail de confirmação: clique no link e depois entre com sua senha.', true); busy(b,false,'Criar senha'); };
-}
+
+/* ---------------- senha provisória (gerada no banco, só administrador) ---------------- */
+window.ROB_SENHA = async email => { const {data,error}=await sb.rpc('rob_senha_provisoria',{p_email:String(email||'').trim().toLowerCase()}); if(error) throw error; return data; };
+window.ROB_MOSTRA_SENHA = (nome, email, senha) => {
+  const site = location.origin+location.pathname;
+  const txt = `Olá${nome?' '+String(nome).split(' ')[0]:''}! Seu acesso ao ROB Lojas está liberado.\n\nEndereço: ${site}\nE-mail: ${email}\nSenha provisória: ${senha}\n\nNo primeiro acesso o painel pede para você criar a sua própria senha (mínimo de 8 caracteres, com letras e números).`;
+  const d=document.createElement('dialog'); d.id='dlgSenhaProv'; d.style.maxWidth='520px';
+  d.innerHTML=`<div class="dlg-hd"><div><h3 style="font-size:18px;font-weight:800">Senha provisória</h3><div class="muted" style="font-size:12.5px">${esc(nome||'')} · ${esc(email)}</div></div><button class="x" type="button" aria-label="Fechar" data-x>×</button></div>
+    <div class="dlg-bd"><div style="font:700 26px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:2px;text-align:center;padding:14px;border:1px dashed var(--line);border-radius:10px;user-select:all">${esc(senha)}</div>
+    <p class="muted" style="margin:0;font-size:12.5px">A senha aparece só agora. Envie para a pessoa por um canal direto (Teams, WhatsApp). No primeiro acesso ela cria a própria senha. Se perder, gere outra em <b>Nova senha</b>.</p>
+    <textarea readonly rows="7" style="width:100%;font:12.5px/1.45 inherit;padding:8px;border:1px solid var(--line);border-radius:8px;resize:vertical">${esc(txt)}</textarea>
+    <div class="actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost" type="button" data-c1>Copiar senha</button><button class="btn" type="button" data-c2>Copiar mensagem</button></div></div>`;
+  document.body.appendChild(d);
+  const cp=(t,b)=>{ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ b.textContent='Copiado!'; },()=>{ d.querySelector('textarea').select(); document.execCommand('copy'); b.textContent='Copiado!'; }); };
+  d.querySelector('[data-c1]').onclick=e=>cp(senha,e.target); d.querySelector('[data-c2]').onclick=e=>cp(txt,e.target);
+  d.querySelector('[data-x]').onclick=()=>d.close(); d.addEventListener('close',()=>d.remove());
+  d.showModal();
+};
 function telaEsqueci(){
   card(`<h2>Esqueci minha senha</h2><p class="muted">Enviamos um link para você criar uma nova senha. Se o e-mail não chegar em alguns minutos, peça uma senha provisória à Controladoria.</p>
     <form id="sbF" class="sb-form"><label>E-mail corporativo<input type="email" id="sbEm" autocomplete="username" required></label>
@@ -4251,7 +4256,7 @@ else iniciar();
 (function(){
   const ICON_ON  = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
   const ICON_OFF = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
-  const SKIP_DLG = new Set(['dlgSenha']);
+  const SKIP_DLG = new Set(['dlgSenha','dlgSenhaProv']);
   const KEY = 'rob_dlg_fs';
   const pref = { get(){ try{ return localStorage.getItem(KEY)==='1'; }catch(e){ return false; } },
                  set(v){ try{ localStorage.setItem(KEY, v?'1':'0'); }catch(e){} } };
